@@ -551,7 +551,7 @@ function ImportRecipeModal({ onClose, onSave }: { onClose: () => void; onSave: (
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
       });
-      if (!resp.ok) throw new Error('Could not reach the recipe AI.');
+      if (!resp.ok) { const ed = await resp.json().catch(()=>({})); throw new Error(ed.error || "Status " + resp.status); }
       const data = await resp.json();
       if (!data.recipe?.title) throw new Error('No recipe found at that URL.');
       setParsed(data.recipe);
