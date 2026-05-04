@@ -56,7 +56,7 @@ function formatAmount(n: number): string {
 }
 
 export function RecipeModal({ name, onClose, onSchedule }: RecipeModalProps) {
-  // combined below
+  const { recipes: storeRecipes, favorites, toggleFavorite } = useEveStore();
   const [servings, setServings] = useState(2);
 
   // Resolve recipe first (needed to read base servings for init)
