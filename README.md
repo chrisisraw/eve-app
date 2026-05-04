@@ -19,3 +19,4 @@ npm run dev
 
 ## Environment Variables
 - `VITE_ANTHROPIC_KEY` — your Anthropic API key for AI features
+read me boo
