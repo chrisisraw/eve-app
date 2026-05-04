@@ -557,7 +557,7 @@ function ImportRecipeModal({ onClose, onSave }: { onClose: () => void; onSave: (
       setParsed(data.recipe);
       setAiUsed(true);
     } catch (err: any) {
-      setError('URL import requires an AI connection. Try copying the recipe text and using the Paste tab instead.');
+      setError('Import failed: ' + (err?.message || 'unknown error') + '. Try the Paste tab.');
     } finally {
       setLoading(false);
     }
