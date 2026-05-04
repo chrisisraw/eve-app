@@ -6,17 +6,28 @@ export default async function handler(req) {
   if (!content) return new Response(JSON.stringify({ error: 'content is required' }), { status: 400 });
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return new Response(JSON.stringify({ error: 'API key not configured' }), { status: 500 });
+  let recipeContent = content;
+  if (content.includes('http')) {
+    try {
+      const url = content.replace('Recipe URL:', '').replace('Please fetch and parse the recipe from this URL.', '').trim();
+      const pageResp = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (pageResp.ok) {
+        const html = await pageResp.text();
+        recipeContent = html.replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(0,8000);
+      }
+    } catch(e) {}
+  }
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2048, messages: [{ role: 'user', content: `Parse this into a vegan recipe JSON. Return ONLY raw JSON: {"title":"string","source":"string","prepTime":"string","cookTime":"string","difficulty":"Easy|Medium|Hard","tags":[],"ingredients":[{"name":"string","amount":"string","unit":"string"}],"steps":[],"nutrition":{"calories":0,"protein":0,"carbs":0,"fat":0,"fiber":0}}\n\nInput:\n${content}` }] }),
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2048, messages: [{ role: 'user', content: `Parse this into a vegan recipe JSON. Return ONLY raw JSON:\n{"title":"string","source":"string","prepTime":"X min","cookTime":"X min","difficulty":"Easy|Medium|Hard","tags":[],"ingredients":[{"name":"string","amount":"string","unit":"string"}],"steps":[],"nutrition":{"calories":0,"protein":0,"carbs":0,"fat":0,"fiber":0}}\n\nInput:\n${recipeContent}` }] }),
     });
     const data = await response.json();
-    const raw = data.content?.[0]?.text?.replace(/```json|```/g, '').trim() || '';
+    const raw = data.content?.[0]?.text?.replace(/```json|```/g,'').trim()||'';
     const parsed = JSON.parse(raw);
     return new Response(JSON.stringify({ recipe: parsed }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  } catch (err) {
+  } catch(err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 }
