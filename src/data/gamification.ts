@@ -1,0 +1,33 @@
+export const LEVELS = [
+  { level: 1, name: "Seedling", icon: "🌱", xp: 0 },
+  { level: 2, name: "Sprout", icon: "🌿", xp: 500 },
+  { level: 3, name: "Herbalist", icon: "🌾", xp: 1500 },
+  { level: 4, name: "Plant Whisperer", icon: "🍃", xp: 3500 },
+  { level: 5, name: "Garden Guru", icon: "🌺", xp: 7500 },
+  { level: 6, name: "Vegan Legend", icon: "🏆", xp: 15000 },
+];
+
+export const BADGES = [
+  { id: 'first_seed', emoji: '🌰', name: 'First Seed', desc: 'Welcome to E.V.E.! Your plant-based journey begins', xp: 50 },
+  { id: 'streak_3', emoji: '🔥', name: '3-Day Streak', desc: 'Log 3 days in a row', xp: 50 },
+  { id: 'streak_7', emoji: '💥', name: '7-Day Streak', desc: 'One full week of clean eating!', xp: 150 },
+  { id: 'streak_30', emoji: '👑', name: '30-Day Legend', desc: 'A whole month of vegan power', xp: 1000 },
+  { id: 'meals_10', emoji: '🍽️', name: 'Decathlete', desc: 'Log 10 meals', xp: 100 },
+  { id: 'meals_50', emoji: '🏆', name: 'Meal Master', desc: 'Log 50 meals', xp: 500 },
+  { id: 'juices_10', emoji: '🥤', name: 'Juice Junkie', desc: 'Try 10 juice recipes', xp: 200 },
+  { id: 'smoothies_10', emoji: '🫐', name: 'Smoothie King', desc: 'Try 10 smoothies', xp: 200 },
+  { id: 'water_goal', emoji: '💧', name: 'Hydrated', desc: 'Hit your water goal for the first time', xp: 50 },
+  { id: 'water_7', emoji: '🌊', name: 'Deep Sea', desc: 'Hit water goal 7 days in a row', xp: 200 },
+  { id: 'garden_1', emoji: '🏡', name: 'Green Thumb', desc: 'Add your first plant', xp: 50 },
+  { id: 'garden_5', emoji: '🌾', name: 'Small Farm', desc: 'Grow 5 different plants', xp: 200 },
+  { id: 'harvest_1', emoji: '🧺', name: 'First Harvest', desc: 'Set a plant to ready for harvest', xp: 100 },
+  { id: 'macro_hit', emoji: '🎯', name: 'Bullseye', desc: 'Hit all macro goals in one day', xp: 300 },
+  { id: 'recipe_upload', emoji: '📤', name: 'Contributor', desc: 'Upload your first custom recipe', xp: 100 },
+  { id: 'share_1', emoji: '📸', name: 'Foodie', desc: 'Share your first meal photo', xp: 50 },
+  { id: 'friend_1', emoji: '🤝', name: 'Socialite', desc: 'Add your first friend', xp: 50 },
+  { id: 'early_bird', emoji: '🌅', name: 'Early Bird', desc: 'Log breakfast before 8am', xp: 50 },
+  { id: 'night_owl', emoji: '🌙', name: 'Night Owl', desc: 'Log a snack after 10pm', xp: 50 },
+  { id: 'weekend_warrior', emoji: '🏋️', name: 'Weekend Warrior', desc: 'Log a workout on Saturday and Sunday', xp: 150 },
+  { id: 'variety_king', emoji: '🌈', name: 'Taste the Rainbow', desc: 'Try a meal from every category', xp: 400 },
+  { id: 'clean_plate', emoji: '✨', name: 'Clean Plate', desc: 'Log a day with zero snacks', xp: 100 },
+];
