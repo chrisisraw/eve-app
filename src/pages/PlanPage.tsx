@@ -328,7 +328,8 @@ function DayCard({ day, isExpanded, onToggle, plan, recipes, onAdd, onClear, onC
               {SLOTS.map(slot => {
                 const key = `${day}-${slot}`;
                 const mealName = plan[key];
-                const calFromPreloaded = mealName ? ((PRELOADED_RECIPES as any)[mealName]?.nutrition?.calories || recipes[mealName]?.nutrition?.calories) : null;
+                const nutrition = mealName ? ((PRELOADED_RECIPES as any)[mealName]?.nutrition?.calories || recipes[mealName]?.nutrition) : null;
+                const calFromPreloaded = nutrition?.calories || null;
                 return (
                   <div key={slot} className="flex gap-2 items-center">
                     <div className="w-16 text-[8px] uppercase font-bold tracking-widest text-muted-foreground shrink-0">
@@ -349,8 +350,8 @@ function DayCard({ day, isExpanded, onToggle, plan, recipes, onAdd, onClear, onC
                         <div className="relative flex items-center h-full px-2.5 py-2 gap-2">
                           <div className="flex-1 min-w-0">
                             <p className="text-[11px] font-bold text-white leading-tight truncate drop-shadow">{mealName}</p>
-                            {calFromPreloaded && (
-                              <p className="text-[9px] text-white/65 font-semibold mt-0.5">{calFromPreloaded} kcal</p>
+                            {nutrition && (
+                              <div className="flex gap-1.5 mt-0.5"><span className="text-[9px] text-white/75 font-semibold">{nutrition.calories}kcal</span><span className="text-[9px] text-blue-300/80 font-semibold">{nutrition.protein}p</span><span className="text-[9px] text-yellow-300/80 font-semibold">{nutrition.carbs}c</span><span className="text-[9px] text-orange-300/80 font-semibold">{nutrition.fat}f</span></div>
                             )}
                           </div>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
