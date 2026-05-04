@@ -502,7 +502,7 @@ function ImportRecipeModal({ onClose, onSave }: { onClose: () => void; onSave: (
     if (tab === 'url') {
       if (!urlVal.trim()) { setError('Please enter a URL.'); return; }
       // For URLs, attempt AI parse since we can't fetch client-side
-      content = `Recipe URL: ${urlVal.trim()}\n\nPlease fetch and parse the recipe from this URL.`;
+      content = urlVal.trim();
     } else if (tab === 'text') {
       if (!textVal.trim()) { setError('Please paste or type a recipe.'); return; }
       content = textVal.trim();
