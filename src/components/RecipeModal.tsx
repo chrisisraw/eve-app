@@ -62,7 +62,8 @@ export function RecipeModal({ name, onClose, onSchedule }: RecipeModalProps) {
   // Resolve recipe first (needed to read base servings for init)
   const preloaded = name ? (PRELOADED_RECIPES as Record<string, any>)[name] : null;
   const sipRecipe = name && !preloaded ? getSipRecipe(name) : null;
-  const recipe = preloaded || sipRecipe;
+  const storeRecipe = name && !preloaded && !sipRecipe ? (storeRecipes[name] || null) : null;
+  const recipe = preloaded || sipRecipe || storeRecipe;
 
   // Sync servings to recipe's base servings whenever the recipe changes
   useEffect(() => {
