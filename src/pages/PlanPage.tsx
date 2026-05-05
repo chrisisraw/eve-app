@@ -328,7 +328,9 @@ function DayCard({ day, isExpanded, onToggle, plan, recipes, onAdd, onClear, onC
               {SLOTS.map(slot => {
                 const key = `${day}-${slot}`;
                 const mealName = plan[key];
-                const nutrition = mealName ? ((PRELOADED_RECIPES as any)[mealName]?.nutrition || recipes[mealName]?.nutrition) : null;
+                const sipRec = mealName ? ([...JUICE_RECIPES,...SMOOTHIE_RECIPES].find(r=>r.name===mealName)) : null;
+                const sipNutrition = sipRec ? {calories:sipRec.cal,protein:sipRec.protein,carbs:sipRec.carbs,fat:sipRec.fat,fiber:0} : null;
+                const nutrition = mealName ? ((PRELOADED_RECIPES as any)[mealName]?.nutrition || recipes[mealName]?.nutrition || sipNutrition) : null;
                 const calFromPreloaded = nutrition?.calories || null;
                 return (
                   <div key={slot} className="flex gap-2 items-center">
