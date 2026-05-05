@@ -1224,7 +1224,9 @@ function TrainerTab() {
         const meals = SLOTS.map(s => store.weekPlan[d+'-'+s]).filter(Boolean);
         return meals.length ? d+': '+meals.join(', ') : null;
       }).filter(Boolean).join(' | ');
-      const ctx = 'Week plan: '+weekSummary+'. Goals: '+JSON.stringify(store.trackerGoals)+'. Profile: '+(store.settings?.fitnessProfile||'general');
+      const todayWorkout = (store.workoutLog?.[new Date().toISOString().slice(0,10)] || []).map((e: any) => e.exercise+' '+e.sets?.length+'sets').join(', ');
+      const autoWorkout = store.autoplanWorkouts ? JSON.stringify(store.autoplanWorkouts).slice(0,300) : '';
+      const ctx = 'Week meal plan: '+weekSummary+'. Macro goals: '+JSON.stringify(store.trackerGoals)+'. Fitness profile: '+(store.settings?.fitnessProfile||'general')+'. Todays workout logged: '+(todayWorkout||'none')+'. Planned workouts: '+autoWorkout;
       const resp = await fetch('/api/eve/wellness-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:text,context:ctx})});
       const data = await resp.json();
       setMessages(prev => [...prev, { role: 'assistant', text: data.report || 'Sorry, try again!' }]);
