@@ -1221,7 +1221,7 @@ function TrainerTab() {
     setLoading(true);
     try {
       const weekSummary = DAYS.map(d => {
-        const meals = SLOTS.map(s => store.weekPlan[d+'-'+s]).filter(Boolean);
+        const meals = SLOTS.map(s => { const m = store.weekPlan[d+"-"+s]; return m ? s+": "+m : null; }).filter(Boolean);
         return meals.length ? d+': '+meals.join(', ') : null;
       }).filter(Boolean).join(' | ');
       const todayWorkout = (store.workoutLog?.[new Date().toISOString().slice(0,10)] || []).map((e: any) => e.exercise+' '+e.sets?.length+'sets').join(', ');
