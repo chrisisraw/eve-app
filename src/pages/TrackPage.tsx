@@ -1206,6 +1206,7 @@ function WorkoutsTab({ date, store }: { date: string; store: ReturnType<typeof u
 interface ChatMessage { role: 'user' | 'assistant'; text: string; }
 
 function TrainerTab() {
+  const store = useEveStore();
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'assistant', text: "Hi, I'm Eve 🌿 Think of me as your plant-based wellness companion. Whether it's nutrition, fitness, recovery, or just figuring out what to eat — I'm here for all of it. What's on your mind today?" }
   ]);
