@@ -298,7 +298,7 @@ function DayCard({ day, isExpanded, onToggle, plan, recipes, onAdd, onClear, onC
   const filledCount = SLOTS.filter(s => plan[`${day}-${s}`]).length;
   const totalCal = SLOTS.reduce((sum, s) => {
     const m = plan[`${day}-${s}`];
-    return sum + (m ? ((PRELOADED_RECIPES as any)[m]?.nutrition?.calories || recipes[m]?.nutrition?.calories || 0) : 0);
+    return sum + (m ? ((PRELOADED_RECIPES as any)[m]?.nutrition || recipes[m]?.nutrition?.calories || 0) : 0);
   }, 0);
 
   return (
