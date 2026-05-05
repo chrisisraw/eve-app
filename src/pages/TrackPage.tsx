@@ -1203,6 +1203,33 @@ function WorkoutsTab({ date, store }: { date: string; store: ReturnType<typeof u
   );
 }
 
+// Simple markdown to JSX converter
+function renderMarkdown(text: string) {
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  lines.forEach((line, i) => {
+    // Bold
+    line = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Italic
+    line = line.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    // Headers
+    if (line.startsWith('### ')) {
+      elements.push(<p key={i} className="font-bold text-sm mt-2 mb-0.5">{line.slice(4)}</p>);
+    } else if (line.startsWith('## ')) {
+      elements.push(<p key={i} className="font-bold text-sm mt-2 mb-0.5">{line.slice(3)}</p>);
+    } else if (line.startsWith('# ')) {
+      elements.push(<p key={i} className="font-bold text-sm mt-2 mb-0.5">{line.slice(2)}</p>);
+    } else if (line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ')) {
+      elements.push(<p key={i} className="pl-3 before:content-['•'] before:mr-2 before:text-primary" dangerouslySetInnerHTML={{__html: line.slice(2)}} />);
+    } else if (line.trim() === '') {
+      elements.push(<br key={i} />);
+    } else {
+      elements.push(<p key={i} dangerouslySetInnerHTML={{__html: line}} />);
+    }
+  });
+  return <div className="space-y-0.5">{elements}</div>;
+}
+
 interface ChatMessage { role: 'user' | 'assistant'; text: string; }
 
 function TrainerTab() {
@@ -1313,7 +1340,7 @@ function TrainerTab() {
             )}
               style={msg.role === 'assistant' ? { border: '1px solid rgba(201,168,76,0.20)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' } : {}}
             >
-              {msg.text}
+              {msg.role === "assistant" ? renderMarkdown(msg.text) : msg.text}
             </div>
           </div>
         ))}
