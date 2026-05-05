@@ -1218,9 +1218,18 @@ function TrainerTab() {
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text }]);
     setLoading(true);
-    await new Promise(r => setTimeout(r, 700 + Math.random() * 400));
-    const response = getTrainerResponse(text);
-    setMessages(prev => [...prev, { role: 'assistant', text: response }]);
+    try {
+      const weekSummary = DAYS.map(d => {
+        const meals = SLOTS.map(s => store.weekPlan[d+'-'+s]).filter(Boolean);
+        return meals.length ? d+': '+meals.join(', ') : null;
+      }).filter(Boolean).join(' | ');
+      const ctx = 'Week plan: '+weekSummary+'. Goals: '+JSON.stringify(store.trackerGoals)+'. Profile: '+(store.settings?.fitnessProfile||'general');
+      const resp = await fetch('/api/eve/wellness-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:text,context:ctx})});
+      const data = await resp.json();
+      setMessages(prev => [...prev, { role: 'assistant', text: data.report || 'Sorry, try again!' }]);
+    } catch(e) {
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Connection error.' }]);
+    }
     setLoading(false);
   };
 
