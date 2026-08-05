@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PageHero } from "@/components/PageHero";
 import { useEveStore } from "@/hooks/useEveStore";
-import type { Plant } from "@/hooks/useEveStore";
+import type { Plant, GrowSystem } from "@/hooks/useEveStore";
 import { GARDEN_CATALOG, getPlantCare } from "@/data/garden";
 import { PRELOADED_RECIPES } from "@/data/recipes";
 import { Card, CardContent } from "@/components/ui/card";
@@ -263,6 +263,13 @@ const STAGE_CONFIG = {
   ready:   { label: 'Ready',   emoji: '🌿', pill: 'bg-emerald-100 text-emerald-700 border-emerald-300', bar: 'bg-emerald-400' },
 };
 
+const SYSTEM_CONFIG: Record<GrowSystem, { label: string; short: string; emoji: string }> = {
+  pipe:      { label: 'PVC Pipe (108-site)', short: 'Pipe',      emoji: '💧' },
+  tower:     { label: 'Tower Garden',        short: 'Tower',     emoji: '🗼' },
+  container: { label: 'Container',           short: 'Container', emoji: '🪴' },
+  indoor:    { label: 'Indoor Herbs',        short: 'Indoor',    emoji: '🏠' },
+};
+
 function getRecipesUsingPlant(plantName: string): string[] {
   // Strip variety info in parens, lowercase
   const keyword = plantName.toLowerCase().replace(/\s*\(.*?\)\s*/g, '').trim();
@@ -288,9 +295,10 @@ interface PlantCardProps {
   idx: number;
   onAdvance: (idx: number, stage: Plant['stage']) => void;
   onRemove: (idx: number) => void;
+  onHarvest: (idx: number) => void;
 }
 
-function PlantCard({ plant, idx, onAdvance, onRemove }: PlantCardProps) {
+function PlantCard({ plant, idx, onAdvance, onRemove, onHarvest }: PlantCardProps) {
   const [showInfo, setShowInfo] = useState(false);
   const stage = STAGE_CONFIG[plant.stage];
   const care = getPlantCare(plant.name);
@@ -317,6 +325,7 @@ function PlantCard({ plant, idx, onAdvance, onRemove }: PlantCardProps) {
             {stage.emoji} {plant.name}
           </p>
           {plant.variety && <p className="text-white/80 text-[10px] mt-0.5">{plant.variety}</p>}
+          <p className="text-white/70 text-[9px] mt-0.5">{SYSTEM_CONFIG[plant.system].emoji} {SYSTEM_CONFIG[plant.system].label}</p>
         </div>
         <button
           onClick={() => onRemove(idx)}
@@ -355,6 +364,20 @@ function PlantCard({ plant, idx, onAdvance, onRemove }: PlantCardProps) {
               </button>
             );
           })}
+        </div>
+
+        {/* Cut-and-come-again counter */}
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="text-muted-foreground">
+            ✂️ Cut {plant.cutCount}× {plant.lastCutDate ? `· last ${plant.lastCutDate}` : ''}
+          </span>
+          {plant.stage === 'ready' && (
+            <button
+              onClick={() => onHarvest(idx)}
+              className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors">
+              ✂️ Cut Now
+            </button>
+          )}
         </div>
 
         {/* Used in recipes */}
@@ -434,6 +457,7 @@ export default function GrowPage() {
   const [selectedVariety, setSelectedVariety] = useState('');
   const [customPlantName, setCustomPlantName] = useState('');
   const [useCustom, setUseCustom] = useState(false);
+  const [selectedSystem, setSelectedSystem] = useState<GrowSystem>('container');
 
   const categories = Object.keys(GARDEN_CATALOG);
 
@@ -457,6 +481,9 @@ export default function GrowPage() {
       variety: useCustom ? '' : selectedVariety,
       category: useCustom ? 'Custom' : selectedCat,
       stage: 'seed',
+      system: selectedSystem,
+      cutCount: 0,
+      lastCutDate: null,
     };
     setState(prev => ({ ...prev, garden: [...prev.garden, newPlant] }));
     addXp(50);
@@ -486,6 +513,21 @@ export default function GrowPage() {
       updated.splice(idx, 1);
       return { ...prev, garden: updated };
     });
+  };
+
+  const handleHarvest = (idx: number) => {
+    setState(prev => {
+      const updated = [...prev.garden];
+      const plant = updated[idx];
+      updated[idx] = {
+        ...plant,
+        cutCount: plant.cutCount + 1,
+        lastCutDate: new Date().toISOString().slice(0, 10),
+      };
+      return { ...prev, garden: updated };
+    });
+    addXp(15);
+    toast.success(`✂️ Cut recorded! +15 XP`);
   };
 
   const readyCount = garden.filter(p => p.stage === 'ready').length;
@@ -597,6 +639,22 @@ export default function GrowPage() {
             </div>
           )}
 
+          <div>
+            <label className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest mb-1 block">Growing System</label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {(Object.keys(SYSTEM_CONFIG) as GrowSystem[]).map(sys => (
+                <button
+                  key={sys}
+                  onClick={() => setSelectedSystem(sys)}
+                  className={cn("flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[9px] font-bold border transition-colors",
+                    selectedSystem === sys ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 text-muted-foreground border-border/40 hover:border-border")}>
+                  <span className="text-sm">{SYSTEM_CONFIG[sys].emoji}</span>
+                  {SYSTEM_CONFIG[sys].short}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <Button onClick={addPlant} disabled={!finalPlantName} className="w-full h-10 rounded-xl font-bold text-xs uppercase tracking-widest">
             <Leaf className="w-4 h-4 mr-2" /> Plant It! (+50 XP)
           </Button>
@@ -612,7 +670,7 @@ export default function GrowPage() {
               <motion.div key={`${plant.name}-${idx}`}
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}>
-                <PlantCard plant={plant} idx={idx} onAdvance={handleAdvance} onRemove={removePlant} />
+                <PlantCard plant={plant} idx={idx} onAdvance={handleAdvance} onRemove={removePlant} onHarvest={handleHarvest} />
               </motion.div>
             ))}
           </AnimatePresence>

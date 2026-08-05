@@ -42,11 +42,16 @@ export interface TrackerEntry {
   time: string;
 }
 
+export type GrowSystem = 'pipe' | 'tower' | 'container' | 'indoor';
+
 export interface Plant {
   name: string;
   variety: string;
   category: string;
   stage: 'seed' | 'growing' | 'ready';
+  system: GrowSystem;
+  cutCount: number;
+  lastCutDate: string | null;
 }
 
 export interface Friend {
@@ -161,6 +166,17 @@ const initialState: EveState = {
 // ── Module-level singleton ───────────────────────────────────────────────────
 // All components share this one instance. Changes propagate to every subscriber.
 
+// Fills in fields added after a plant may have been saved — existing plants
+// keep every field they already have; only missing ones get a default.
+function migratePlant(plant: any): Plant {
+  return {
+    ...plant,
+    system: plant.system ?? 'container',
+    cutCount: plant.cutCount ?? 0,
+    lastCutDate: plant.lastCutDate ?? null,
+  };
+}
+
 function loadState(): EveState {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -172,6 +188,7 @@ function loadState(): EveState {
         profile: { ...initialState.profile, ...(parsed.profile || {}) },
         settings: { ...initialState.settings, ...(parsed.settings || {}) },
         socialPosts: parsed.socialPosts || MOCK_POSTS,
+        garden: Array.isArray(parsed.garden) ? parsed.garden.map(migratePlant) : initialState.garden,
       };
     }
   } catch {
