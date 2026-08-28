@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "check:recipes": "node scripts/check-recipe-coverage.mjs",
+    "prebuild": "npm run check:recipes",
     "build": "vite build",
     "preview": "vite preview"
   },
