@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Star, Plus, ChevronDown, ChevronUp, X, Search, Upload, Link, FileText, Loader2, Trash2, Heart, Clock, ChefHat, Flame } from "lucide-react";
+import { Star, Plus, ChevronDown, ChevronUp, X, Search, Upload, Link, FileText, Loader2, Trash2, Heart, Clock, ChefHat, Flame, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -72,6 +72,34 @@ export default function PlanPage() {
     setSchedulePickerMeal(null);
   };
 
+  const DAY_TO_WEEKDAY: Record<string, number> = {
+    Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7,
+  };
+
+  const handleExportWeekPlan = () => {
+    const items: { weekday: number; slot: string; title: string }[] = [];
+    for (const [key, title] of Object.entries(weekPlan)) {
+      if (!title) continue;
+      const sep = key.indexOf('-');
+      if (sep === -1) continue;
+      const weekday = DAY_TO_WEEKDAY[key.slice(0, sep)];
+      if (!weekday) continue;
+      items.push({ weekday, slot: key.slice(sep + 1).toLowerCase(), title });
+    }
+    if (items.length === 0) {
+      toast.error('Nothing planned yet — add meals before exporting');
+      return;
+    }
+    const payload = { version: 1, exported_at: new Date().toISOString(), items };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `eve-weekplan-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const getPickerOptions = () => {
     if (!pickerContext) return [];
     const slot = pickerContext.slot;
@@ -106,12 +134,20 @@ export default function PlanPage() {
         ]}
       >
         {activeTab === 'week' && (
-          <button
-            onClick={() => setConfirmClearWeek(true)}
-            className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground hover:text-destructive transition-colors uppercase tracking-widest"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> Clear Week
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleExportWeekPlan}
+              className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest"
+            >
+              <Download className="w-3.5 h-3.5" /> Export
+            </button>
+            <button
+              onClick={() => setConfirmClearWeek(true)}
+              className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground hover:text-destructive transition-colors uppercase tracking-widest"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Clear Week
+            </button>
+          </div>
         )}
       </PageHero>
 
