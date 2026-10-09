@@ -7,7 +7,7 @@ import { useSound } from "@/hooks/useSounds";
 import { FOOD_BANK } from "@/data/foodbank";
 import { MEALS, DAYS, SLOTS } from "@/data/meals";
 import { PRELOADED_RECIPES } from "@/data/recipes";
-import { ChevronLeft, ChevronRight, Plus, Minus, X, Dumbbell, Apple, Droplets, Check, Send, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Minus, X, Dumbbell, Apple, Droplets, Check, Send, TrendingUp, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -896,6 +896,16 @@ function WorkoutsTab({ date, store }: { date: string; store: ReturnType<typeof u
                   </div>
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
                 </button>
+                {/* Swap button — only for exercises with alternatives */}
+                {(item.alts === undefined || item.alts.length > 0) && (
+                  <button
+                    onClick={() => store.swapWorkout(todayName, item.exercise)}
+                    title="Swap for another exercise — it won't reappear later this week"
+                    className="shrink-0 w-12 self-stretch flex items-center justify-center hover:bg-primary/10 active:bg-primary/20 transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                )}
                 {/* + Quick-log button */}
                 <button
                   onClick={e => handleQuickLog(item, e)}

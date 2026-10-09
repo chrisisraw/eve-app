@@ -3,7 +3,7 @@ import { BADGES } from '../data/gamification';
 import { MEALS, DAYS, SLOTS } from '../data/meals';
 import { JUICE_RECIPES, SMOOTHIE_RECIPES } from '../data/sips';
 import { FOOD_BANK } from '../data/foodbank';
-import { SuggestedExercise, PROFILE_WORKOUT_PLANS, DEFAULT_WORKOUT_PLAN } from '../data/workout';
+import { SuggestedExercise, PROFILE_WORKOUT_PLANS, DEFAULT_WORKOUT_PLAN, WorkoutSwaps, normalizeSwaps, swapExercise, applySwaps, weekStartOf } from '../data/workout';
 import { PRELOADED_RECIPES } from '../data/recipes';
 
 export interface Ingredient {
@@ -119,6 +119,7 @@ export interface EveState {
   settings: { theme: 'light' | 'dark' | 'system'; calGoal: number; proteinGoal: number; carbsGoal: number; fatGoal: number; fitnessProfile: string };
   workoutLog: Record<string, WorkoutEntry[]>;
   suggestedWorkouts: Record<string, SuggestedExercise[]>;
+  workoutSwaps: WorkoutSwaps;
   shoppingChecked: Record<string, boolean>;
   pantryItems: string[];
   groceryStore: string;
@@ -155,6 +156,7 @@ const initialState: EveState = {
   settings: { theme: 'light', calGoal: 2000, proteinGoal: 50, carbsGoal: 250, fatGoal: 65, fitnessProfile: '' },
   workoutLog: {},
   suggestedWorkouts: {},
+  workoutSwaps: { weekStart: '', out: [] },
   shoppingChecked: {},
   pantryItems: [],
   groceryStore: 'walmart',
@@ -188,6 +190,7 @@ function loadState(): EveState {
         profile: { ...initialState.profile, ...(parsed.profile || {}) },
         settings: { ...initialState.settings, ...(parsed.settings || {}) },
         socialPosts: parsed.socialPosts || MOCK_POSTS,
+        workoutSwaps: normalizeSwaps(parsed.workoutSwaps),
         garden: Array.isArray(parsed.garden) ? parsed.garden.map(migratePlant) : initialState.garden,
       };
     }
@@ -457,7 +460,18 @@ export function useEveStore() {
       });
     });
 
-    setStore(s => ({ ...s, suggestedWorkouts: suggested, xp: s.xp + 25 }));
+    setStore(s => ({ ...s, suggestedWorkouts: applySwaps(suggested, s.workoutSwaps), xp: s.xp + 25 }));
+  }, []);
+
+  // Swap one suggested exercise for a same-pillar alternative; the swapped-out
+  // exercise is kept off the remaining days of this week. Returns false if no swap was possible.
+  const swapWorkout = useCallback((day: string, exercise: string): boolean => {
+    const week = weekStartOf(new Date());
+    const current = _state.workoutSwaps.weekStart === week ? _state.workoutSwaps : { weekStart: week, out: [] };
+    const result = swapExercise(_state.suggestedWorkouts, current, day, exercise);
+    if (!result) return false;
+    setStore(s => ({ ...s, suggestedWorkouts: result.plan, workoutSwaps: { ...result.swaps, weekStart: week } }));
+    return true;
   }, []);
 
   const autoPlan = useCallback(() => {
@@ -678,6 +692,7 @@ export function useEveStore() {
     removeWorkoutEntry,
     autoPlan,
     autoplanWorkouts,
+    swapWorkout,
     getTodayCalories,
     getTodayWater,
     getWeeklyTotals,

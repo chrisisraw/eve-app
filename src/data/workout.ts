@@ -41,7 +41,48 @@ export interface SuggestedExercise {
   sets: number;
   reps: string;
   note: string;
+  pillar?: string;   // Athlete-style pillar label, e.g. "Heavy Push"
+  alts?: string[];   // same-pillar alternatives a swap may pick from
 }
+
+// ── Athlete day structure (ported from staugustine-athlete) ──────────────────
+// Each pillar: first `pick` moves are the default, the rest are swap alternatives.
+// sets/reps are placeholders — the Athlete source has no sets/reps.
+interface Pillar { name: string; category: string; pick: number; moves: string[]; }
+
+function fromPillars(tagline: string, pillars: Pillar[]): SuggestedExercise[] {
+  return pillars.flatMap(p => {
+    const chosen = p.moves.slice(0, p.pick);
+    const alts = p.moves.slice(p.pick);
+    return chosen.map(exercise => ({
+      exercise, category: p.category, sets: 3, reps: '8-10',
+      note: `${p.name} — ${tagline}`, pillar: p.name, alts,
+    }));
+  });
+}
+
+const ATHLETE_PUSH_CORE = fromPillars('Chest · Shoulders · Triceps · Abs', [
+  { name: 'Heavy Push',       category: 'Chest',     pick: 1, moves: ['Weighted Dips', 'Dumbbell Incline Press', 'Barbell Bench Press'] },
+  { name: 'Overhead',         category: 'Shoulders', pick: 1, moves: ['Overhead Dumbbell Press', 'Landmine Press', 'Arnold Press'] },
+  { name: 'Calisthenic Push', category: 'Chest',     pick: 1, moves: ['Archer Push-ups', 'Ring Push-ups', 'Diamond Push-ups', 'Pike Push-ups'] },
+  { name: 'Core / Rotation',  category: 'Core',      pick: 2, moves: ['Hanging Leg Raises', 'Windshield Wipers', 'Cable Woodchoppers', 'Turkish Get-Ups', 'Ab Wheel Rollouts'] },
+]).concat([{ exercise: 'Wildcard', category: 'Full Body', sets: 1, reps: 'free', note: 'Whatever you feel like today — no rules', pillar: 'Wildcard', alts: [] }]);
+
+const ATHLETE_PULL_HINGE = fromPillars('Back · Posterior Chain · Grip', [
+  { name: 'Heavy Pull',     category: 'Back',      pick: 1, moves: ['Weighted Pull-ups', 'Barbell Rows', 'Dumbbell Rows'] },
+  { name: 'Vertical Pull',  category: 'Back',      pick: 1, moves: ['Wide-grip Pull-ups', 'Neutral-grip Pull-ups', 'Cable Lat Pulldown'] },
+  { name: 'Hinge',          category: 'Legs',      pick: 1, moves: ['Conventional Deadlift', 'Romanian Deadlift', 'Single-arm KB Swings', 'Good Mornings'] },
+  { name: 'Row / Face Pull', category: 'Back',     pick: 1, moves: ['Face Pulls', 'TRX / Ring Rows', 'Seated Cable Row', 'Barbell Curls'] },
+  { name: 'Athletic KB',    category: 'Full Body', pick: 1, moves: ['Kettlebell Cleans', 'Kettlebell Snatches', 'KB Clean & Press', 'KB Windmill'] },
+]);
+
+const ATHLETE_EXPLOSIVE_LEGS = fromPillars('Power · Legs · Full Body Finisher', [
+  { name: 'Squat / Lunge',  category: 'Legs',      pick: 1, moves: ['Bulgarian Split Squats', 'Goblet Squats', 'Walking Lunges', 'Pistol Squats', 'Front Squats'] },
+  { name: 'Explosive KB',   category: 'Full Body', pick: 1, moves: ['KB Swings (high volume)', 'KB Cleans & Jerks', 'KB Snatch Complex', 'Double KB Swings'] },
+  { name: 'Dynamic / Plyo', category: 'Full Body', pick: 1, moves: ['Medicine Ball Slams', 'Box Jumps', 'Explosive Push-ups', 'Depth Jumps', 'Broad Jumps'] },
+  { name: 'Accessory',      category: 'Legs',      pick: 1, moves: ['Lateral Raises', 'Leg Extensions', 'Calf Raises', 'Hip Thrusts', 'Reverse Flyes'] },
+  { name: 'Finisher',       category: 'Cardio',    pick: 1, moves: ['SkiErg 500m sprints', 'RowErg intervals', 'Sled pushes', 'Assault Bike Tabata', 'KB Complex AMRAP'] },
+]);
 
 // 7-element arrays: index 0 = Monday … 6 = Sunday. Empty array = rest day.
 export const PROFILE_WORKOUT_PLANS: Record<string, SuggestedExercise[][]> = {
@@ -335,37 +376,24 @@ export const PROFILE_WORKOUT_PLANS: Record<string, SuggestedExercise[][]> = {
   ],
 
   athlete: [
-    // Mon — Explosive power
-    [
-      { exercise: 'Box Jumps',      category: 'Full Body', sets: 4, reps: '6',        note: 'Land soft — absorb through legs' },
-      { exercise: 'Burpees',        category: 'Full Body', sets: 4, reps: '10',       note: 'Move with intention and power' },
-      { exercise: 'Battle Ropes',   category: 'Full Body', sets: 4, reps: '30sec',    note: 'Full intensity — let it rip!' },
-      { exercise: 'HIIT Sprints',   category: 'Cardio',    sets: 6, reps: '30sec max', note: 'Top gear — this is what athletes do' },
-    ],
+    // Mon — Push & Core (Athlete day)
+    ATHLETE_PUSH_CORE,
     // Tue — Strength foundation
     [
       { exercise: 'Deadlift',        category: 'Full Body', sets: 4, reps: '4-6', note: 'Athlete\'s #1 strength lift' },
       { exercise: 'Barbell Squat',   category: 'Legs',      sets: 4, reps: '4-6', note: 'Build the base of power' },
       { exercise: 'Clean and Press', category: 'Full Body', sets: 3, reps: '5',   note: 'Athletic movement through full range' },
     ],
-    // Wed — Cardio + Core
-    [
-      { exercise: 'Rowing Machine', category: 'Cardio', sets: 1, reps: '20min', note: 'High intensity — go hard on intervals' },
-      { exercise: 'Ab Rollout',     category: 'Core',   sets: 3, reps: '10-12', note: 'Full extension — athletic core strength' },
-      { exercise: 'Russian Twists', category: 'Core',   sets: 3, reps: '20',    note: 'Rotational power for sport' },
-    ],
+    // Wed — Pull & Hinge (Athlete day)
+    ATHLETE_PULL_HINGE,
     // Thu — Upper body
     [
       { exercise: 'Barbell Bench Press', category: 'Chest',     sets: 4, reps: '5-6', note: 'Push power for sport performance' },
       { exercise: 'Pull-Ups',            category: 'Back',      sets: 4, reps: '8-10', note: 'Add weight if possible' },
       { exercise: 'Overhead Press',      category: 'Shoulders', sets: 3, reps: '6-8', note: 'Pressing power overhead' },
     ],
-    // Fri — Legs + Explosive
-    [
-      { exercise: 'Hack Squat',    category: 'Legs',      sets: 4, reps: '8',    note: 'Quad-dominant — explode out of the hole' },
-      { exercise: 'Box Jumps',     category: 'Full Body', sets: 3, reps: '5',    note: 'Power — land and immediately reset' },
-      { exercise: "Farmer's Walk", category: 'Full Body', sets: 4, reps: '40m',  note: 'Grip, core, and grit' },
-    ],
+    // Fri — Explosive & Legs (Athlete day)
+    ATHLETE_EXPLOSIVE_LEGS,
     // Sat — Full body conditioning
     [
       { exercise: 'Turkish Get-Up',   category: 'Full Body', sets: 3, reps: '5 each', note: 'Master movement — total body coordination' },
@@ -408,3 +436,86 @@ export const DEFAULT_WORKOUT_PLAN: SuggestedExercise[][] = [
   // Sun — Rest
   [],
 ];
+
+// ── Weekly swaps ─────────────────────────────────────────────────────────────
+// `out` = exercises swapped away this week; they must not reappear later in it.
+export interface WorkoutSwaps { weekStart: string; out: string[]; }
+
+export const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+export function weekStartOf(date: Date): string {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Safe for any saved shape: anything malformed becomes an empty swaps record.
+export function normalizeSwaps(raw: unknown): WorkoutSwaps {
+  const r = raw as Partial<WorkoutSwaps> | null | undefined;
+  if (r && typeof r.weekStart === 'string' && Array.isArray(r.out)) {
+    return { weekStart: r.weekStart, out: r.out.filter((x): x is string => typeof x === 'string') };
+  }
+  return { weekStart: '', out: [] };
+}
+
+function altsFor(ex: SuggestedExercise): string[] {
+  return ex.alts ?? (WORKOUT_CATALOG[ex.category] || []);
+}
+
+// Replaces `exercise` on `day` and removes it (or substitutes) on every later day.
+// Returns null if the exercise can't be swapped (not on that day, or no unused alternative).
+export function swapExercise(
+  plan: Record<string, SuggestedExercise[]>,
+  swaps: WorkoutSwaps,
+  day: string,
+  exercise: string,
+): { plan: Record<string, SuggestedExercise[]>; swaps: WorkoutSwaps } | null {
+  const dayIdx = WEEK_DAYS.indexOf(day);
+  const target = (plan[day] || []).find(e => e.exercise === exercise);
+  if (dayIdx < 0 || !target) return null;
+
+  const out = swaps.out.includes(exercise) ? swaps.out : [...swaps.out, exercise];
+  const inPlan = new Set(Object.values(plan).flat().map(e => e.exercise));
+  const pick = (ex: SuggestedExercise) =>
+    altsFor(ex).find(a => !out.includes(a) && !inPlan.has(a) && a !== ex.exercise);
+
+  const repl = pick(target);
+  if (!repl) return null;
+  inPlan.add(repl);
+
+  const next: Record<string, SuggestedExercise[]> = {};
+  WEEK_DAYS.forEach((d, i) => {
+    next[d] = (plan[d] || []).flatMap(ex => {
+      if (d === day && ex.exercise === exercise) return [{ ...ex, exercise: repl }];
+      if (i > dayIdx && ex.exercise === exercise) {
+        const alt = pick(ex);
+        if (!alt) return [];
+        inPlan.add(alt);
+        return [{ ...ex, exercise: alt }];
+      }
+      return [ex];
+    });
+  });
+  return { plan: next, swaps: { ...swaps, out } };
+}
+
+// Re-applies this week's swapped-out exercises to a freshly generated plan.
+export function applySwaps(
+  plan: Record<string, SuggestedExercise[]>,
+  swaps: WorkoutSwaps,
+  today: Date = new Date(),
+): Record<string, SuggestedExercise[]> {
+  if (swaps.weekStart !== weekStartOf(today) || swaps.out.length === 0) return plan;
+  const used = new Set(Object.values(plan).flat().map(e => e.exercise));
+  const next: Record<string, SuggestedExercise[]> = {};
+  WEEK_DAYS.forEach(d => {
+    next[d] = (plan[d] || []).flatMap(ex => {
+      if (!swaps.out.includes(ex.exercise)) return [ex];
+      const alt = altsFor(ex).find(a => !swaps.out.includes(a) && !used.has(a));
+      if (!alt) return [];
+      used.add(alt);
+      return [{ ...ex, exercise: alt }];
+    });
+  });
+  return next;
+}
