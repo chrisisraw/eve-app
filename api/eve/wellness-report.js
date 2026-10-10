@@ -1,11 +1,34 @@
+const MAX_QUESTION = 1000;
+const MAX_CONTEXT = 8192;
+
+function readBody(req) {
+  let b = req.body;
+  if (typeof b === 'string') {
+    try { b = JSON.parse(b); } catch { return null; }
+  }
+  if (!b || typeof b !== 'object' || Array.isArray(b) || Buffer.isBuffer(b)) return null;
+  return b;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { question, context } = req.body;
+  const body = readBody(req);
+  if (!body) {
+    return res.status(400).json({ error: 'Invalid request' });
+  }
+  if (typeof body.question !== 'string' || (body.context != null && typeof body.context !== 'string')) {
+    return res.status(400).json({ error: 'question is required' });
+  }
+  const question = body.question.trim();
+  const context = body.context == null ? '' : body.context.trim();
   if (!question) {
     return res.status(400).json({ error: 'question is required' });
+  }
+  if (question.length > MAX_QUESTION || context.length > MAX_CONTEXT) {
+    return res.status(400).json({ error: 'Input too long' });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -42,6 +65,7 @@ Give a warm, encouraging, personalized wellness insight in 3-4 sentences. Focus 
     const report = block?.type === 'text' ? block.text.trim() : 'Keep up the great plant-based work! 🌱';
     res.json({ report });
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Wellness report failed' });
+    console.error('wellness-report failed:', err?.name);
+    res.status(500).json({ error: 'Something went wrong' });
   }
 }
