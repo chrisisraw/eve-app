@@ -179,7 +179,7 @@ function migratePlant(plant: any): Plant {
   };
 }
 
-function loadState(): EveState {
+export function loadState(): EveState {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -198,6 +198,69 @@ function loadState(): EveState {
     // ignore corrupt data
   }
   return { ...initialState };
+}
+
+// The suggested week for a profile id ('' or unknown → default template), annotated with the
+// user's own history. Pure: callers decide how to store it.
+export function buildSuggestedWeek(
+  profileId: string,
+  workoutLog: Record<string, WorkoutEntry[]>,
+): Record<string, SuggestedExercise[]> {
+  const template = (profileId && PROFILE_WORKOUT_PLANS[profileId])
+    ? PROFILE_WORKOUT_PLANS[profileId]
+    : DEFAULT_WORKOUT_PLAN;
+
+  // Count how many times each exercise has been done (for personalised notes)
+  const exerciseFreq: Record<string, number> = {};
+  Object.values(workoutLog).flat().forEach(entry => {
+    exerciseFreq[entry.exercise] = (exerciseFreq[entry.exercise] || 0) + 1;
+  });
+
+  // Find exercises the user has done frequently (≥3×) to prioritise them
+  const frequentExercises = new Set(
+    Object.entries(exerciseFreq).filter(([, count]) => count >= 3).map(([ex]) => ex)
+  );
+
+  const DAYS_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const suggested: Record<string, SuggestedExercise[]> = {};
+
+  DAYS_ORDER.forEach((day, i) => {
+    const dayPlan = (template[i] || []) as SuggestedExercise[];
+    suggested[day] = dayPlan.map(ex => {
+      const count = exerciseFreq[ex.exercise] || 0;
+      const isFav = frequentExercises.has(ex.exercise);
+      const personalNote = count > 0
+        ? isFav
+          ? `You've crushed this ${count}× — push for a new PR today! 🔥`
+          : `You've done this ${count}× before — beat that last session! 💪`
+        : ex.note;
+      return { ...ex, note: personalNote };
+    });
+  });
+  return suggested;
+}
+
+// Selecting a fitness profile. A CHANGE of profile also regenerates the week for the new one
+// and starts a fresh swap record (an old `out` list would hide same-named exercises in the new
+// template). Re-selecting the current profile leaves the week and swaps alone. Macro goals are
+// applied exactly as before.
+export function applyFitnessProfile(s: EveState, id: string, now: Date = new Date()): EveState {
+  const fp = FITNESS_PROFILES[id];
+  const nextId = fp ? id : '';
+  const changed = nextId !== (s.settings.fitnessProfile || '');
+  const next: EveState = fp
+    ? {
+        ...s,
+        settings: { ...s.settings, fitnessProfile: id },
+        trackerGoals: { ...s.trackerGoals, cal: fp.cal, protein: fp.protein, carbs: fp.carbs, fat: fp.fat, fiber: fp.fiber },
+      }
+    : { ...s, settings: { ...s.settings, fitnessProfile: '' } };
+  if (!changed) return next;
+  return {
+    ...next,
+    suggestedWorkouts: buildSuggestedWeek(nextId, s.workoutLog),
+    workoutSwaps: { weekStart: weekStartOf(now), out: [] },
+  };
 }
 
 let _state: EveState = loadState();
@@ -320,16 +383,7 @@ export function useEveStore() {
   }, []);
 
   const setFitnessProfile = useCallback((id: string) => {
-    const fp = FITNESS_PROFILES[id];
-    if (fp) {
-      setStore(s => ({
-        ...s,
-        settings: { ...s.settings, fitnessProfile: id },
-        trackerGoals: { ...s.trackerGoals, cal: fp.cal, protein: fp.protein, carbs: fp.carbs, fat: fp.fat, fiber: fp.fiber },
-      }));
-    } else {
-      setStore(s => ({ ...s, settings: { ...s.settings, fitnessProfile: '' } }));
-    }
+    setStore(s => applyFitnessProfile(s, id));
   }, []);
 
   const logMeal = useCallback((date: string, entry: Omit<TrackerEntry, 'id'>) => {
@@ -427,38 +481,7 @@ export function useEveStore() {
   }, []);
 
   const autoplanWorkouts = useCallback(() => {
-    const profileId = _state.settings.fitnessProfile;
-    const template = (profileId && PROFILE_WORKOUT_PLANS[profileId])
-      ? PROFILE_WORKOUT_PLANS[profileId]
-      : DEFAULT_WORKOUT_PLAN;
-
-    // Count how many times each exercise has been done (for personalised notes)
-    const exerciseFreq: Record<string, number> = {};
-    Object.values(_state.workoutLog).flat().forEach(entry => {
-      exerciseFreq[entry.exercise] = (exerciseFreq[entry.exercise] || 0) + 1;
-    });
-
-    // Find exercises the user has done frequently (≥3×) to prioritise them
-    const frequentExercises = new Set(
-      Object.entries(exerciseFreq).filter(([, count]) => count >= 3).map(([ex]) => ex)
-    );
-
-    const DAYS_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const suggested: Record<string, SuggestedExercise[]> = {};
-
-    DAYS_ORDER.forEach((day, i) => {
-      const dayPlan = (template[i] || []) as SuggestedExercise[];
-      suggested[day] = dayPlan.map(ex => {
-        const count = exerciseFreq[ex.exercise] || 0;
-        const isFav = frequentExercises.has(ex.exercise);
-        const personalNote = count > 0
-          ? isFav
-            ? `You've crushed this ${count}× — push for a new PR today! 🔥`
-            : `You've done this ${count}× before — beat that last session! 💪`
-          : ex.note;
-        return { ...ex, note: personalNote };
-      });
-    });
+    const suggested = buildSuggestedWeek(_state.settings.fitnessProfile, _state.workoutLog);
 
     setStore(s => ({ ...s, suggestedWorkouts: applySwaps(suggested, s.workoutSwaps), xp: s.xp + 25 }));
   }, []);
